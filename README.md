@@ -1,0 +1,2 @@
+# MSCSuduku
+MSVisualStudio C++ Sudoku
