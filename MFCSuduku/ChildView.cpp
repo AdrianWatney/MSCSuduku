@@ -18,6 +18,7 @@
 #define SFONTSIZE		48
 #define BORDERSIZE		10
 
+//	The constructor initializes various member variables, including the selected box, help flag, selected character, number of holes, timer count, game state, and wrong guess count.
 CChildView::CChildView()
 {
 	m_selected_box = -1;	// no selected box.
@@ -27,6 +28,15 @@ CChildView::CChildView()
 	m_cnt = 0;				// count for timer
 	m_state = DRAWBOARD;	// state machine for game
 	m_wrongguess = 0;
+	// initilise arrays 
+	memset(m_suduko_board, 0, sizeof(m_suduko_board));
+	memset(m_removedVals, 0, sizeof(m_removedVals));
+	memset(m_box, 0, sizeof(m_box));
+	memset(m_row, 0, sizeof(m_row));
+	memset(m_col, 0, sizeof(m_col));
+	memset(&m_ba, 0, sizeof(m_ba));
+	memset(&m_newBall, 0, sizeof(m_newBall));
+	m_hFont = NULL;
 }
 
 CChildView::~CChildView()
@@ -47,7 +57,8 @@ END_MESSAGE_MAP()
 
 
 // CChildView message handlers
-
+//	This function is called before the window is created. It sets the window styles and registers the window class.
+//	It also initializes the Sudoku board by calling InitBoard.
 BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs) 
 {
 	if (!CWnd::PreCreateWindow(cs))
@@ -63,7 +74,8 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 
 	return TRUE;
 }
-
+// 	This function handles the painting of the window. It uses a state machine to determine what to draw based on the current game state.
+//	It calls DrawBoard, RevealHoles, AnimateWin, and ShowStats as needed.
 void CChildView::OnPaint() 
 {
 	int		cnt;
@@ -99,7 +111,8 @@ void CChildView::OnPaint()
 		break;
 	}
 }
-
+//	This function reveals the holes in the Sudoku board by filling in the removed values one by one.
+//	If all holes are revealed, it transitions to the ANIMATEWIN state and sets up the win screen.
 void CChildView::RevealHoles(CPaintDC* dc)
 {
 	int		cnt;
@@ -139,6 +152,8 @@ void CChildView::RevealHoles(CPaintDC* dc)
 		SetupWinScreen(dc);		// Setup win screen
 	}
 }
+//	This function handles the animation when the player wins the game.
+//	It calls MoveWinScreen to move the win screen and ShowStats to display the game statistics.
 void CChildView::AnimateWin(CPaintDC* dc)
 {
 	CRect	r;
@@ -147,7 +162,8 @@ void CChildView::AnimateWin(CPaintDC* dc)
 	MoveWinScreen(dc);
 	ShowStats(dc);
 }
-
+// This function draws the Sudoku board on the screen.
+// It uses various GDI objects like pens, brushes, and fonts to draw the grid, numbers, and highlights.
 void CChildView::DrawBoard(CPaintDC* dc)
 {
 	int		n, h, w, sz, x, y, xx, yy, xn, yn;
@@ -287,7 +303,7 @@ void CChildView::DrawBoard(CPaintDC* dc)
 	dc->SelectObject(hOldFont);
 	DeleteObject(hFont);
 }
-
+// This function counts the number of empty cells (holes) left on the Sudoku board.
 int CChildView::CountHolesLeft()
 {
 	int		i;
@@ -298,7 +314,7 @@ int CChildView::CountHolesLeft()
 	}
 	return cnt;
 }
-
+// This function displays the game statistics, such as the number of wrong guesses and the number of blanks left.
 void CChildView::ShowStats(CPaintDC* dc)
 {
 	int		x, y, w, h, sz, cnt;
@@ -326,7 +342,7 @@ void CChildView::ShowStats(CPaintDC* dc)
 	//dc->MoveTo(rn.left, rn.bottom);
 	dc->DrawText(s, &rn, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
-
+// This function handles the timer events. It is used for animations, such as moving the win screen.
 void CChildView::OnTimer(UINT_PTR nIDEvent)
 {
 	CString	s;
@@ -345,6 +361,7 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 	}
 }
 // MoveWinScreen is called every 1/10 second untill won display is finnished
+// This function moves the win screen text around the window, bouncing off the edges.
 void CChildView::MoveWinScreen(CPaintDC* dc) {
 	int		x, y;
 	CRect	r, rr;
@@ -514,15 +531,18 @@ unsigned char* CChildView::Shuffle(unsigned char* array)
 	int		i;
 	unsigned char* newArray;
 	newArray = (unsigned char*)malloc(sizeof(numArray));
-	memcpy(newArray, numArray, sizeof(numArray));
-	unsigned char c;
-	for (i = sizeof(numArray) - 1; i > 0; i--) {
-		int j = rand() % (i + 1); // Math.floor(Math.random() * (i + 1));
-		//[newArray[i], newArray[j]] = [newArray[j], newArray[i]];
-		// swap byte from array[i] with array[j]
-		c = newArray[i];
-		newArray[i] = newArray[j];
-		newArray[j] = c;
+	if (newArray)
+	{
+		memcpy(newArray, numArray, sizeof(numArray));
+		unsigned char c;
+		for (i = sizeof(numArray) - 1; i > 0; i--) {
+			int j = rand() % (i + 1); // Math.floor(Math.random() * (i + 1));
+			//[newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+			// swap byte from array[i] with array[j]
+			c = newArray[i];
+			newArray[i] = newArray[j];
+			newArray[j] = c;
+		}
 	}
 	return newArray;
 }
@@ -640,25 +660,28 @@ unsigned char* CChildView::fillPuzzle(unsigned char* startingBoard)
 	// Shuffled [0 - 9 ] array fills board randomly each pass
 	newArray = Shuffle(numArray);	// returns allocated newarray
 	nextBoard = (unsigned char*)malloc(sizeof(m_suduko_board));
-	memcpy(nextBoard, startingBoard, sizeof(m_suduko_board));
-	for (i = 0; i < 9; i++) {
-		n = newArray[i];	// n = Randon (1..9)
-		if (safeToPlace(nextBoard, emptyCell, n)) {
-			nextBoard[emptyCell] = n; // If safe to place number, place it
-			// Recursively call the fill function to place num in next empty cell
-			if (newBoard = fillPuzzle(nextBoard)) {
-				free(newArray);
-				if (newBoard != nextBoard) {
-					free(nextBoard);
+	if (nextBoard)
+	{
+		memcpy(nextBoard, startingBoard, sizeof(m_suduko_board));
+		for (i = 0; i < 9; i++) {
+			n = newArray[i];	// n = Randon (1..9)
+			if (safeToPlace(nextBoard, emptyCell, n)) {
+				nextBoard[emptyCell] = n; // If safe to place number, place it
+				// Recursively call the fill function to place num in next empty cell
+				if (newBoard = fillPuzzle(nextBoard)) {
+					free(newArray);
+					if (newBoard != nextBoard) {
+						free(nextBoard);
+					}
+					return newBoard;
 				}
-				return newBoard;
+				// If we were unable to place the future num, that num was wrong. Reset it and try next value
+				nextBoard[emptyCell] = 0;
 			}
-			// If we were unable to place the future num, that num was wrong. Reset it and try next value
-			nextBoard[emptyCell] = 0;
 		}
+		free(nextBoard);
 	}
 	free(newArray);	// free allocated newarray
-	free(nextBoard);
 	return FALSE;
 }
 
