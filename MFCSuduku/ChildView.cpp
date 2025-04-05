@@ -18,7 +18,10 @@
 #define SFONTSIZE		48
 #define BORDERSIZE		10
 
-//	The constructor initializes various member variables, including the selected box, help flag, selected character, number of holes, timer count, game state, and wrong guess count.
+/**
+ * @brief Constructor for the CChildView class.
+ * Initializes various member variables, including the selected box, help flag, selected character, number of holes, timer count, game state, and wrong guess count.
+ */
 CChildView::CChildView()
 {
 	m_selected_box = -1;	// no selected box.
@@ -39,6 +42,9 @@ CChildView::CChildView()
 	m_hFont = NULL;
 }
 
+/**
+ * @brief Destructor for the CChildView class.
+ */
 CChildView::~CChildView()
 {
 }
@@ -47,7 +53,6 @@ CChildView::~CChildView()
 BEGIN_MESSAGE_MAP(CChildView, CWnd)
 	ON_WM_PAINT()
 	ON_WM_TIMER()
-	ON_WM_RBUTTONUP()
 	ON_WM_LBUTTONDOWN()
 	ON_WM_KEYDOWN()
 	ON_COMMAND(ID_HELP_SHOWHELP, &CChildView::OnHelpShowhelp)
@@ -56,9 +61,13 @@ END_MESSAGE_MAP()
 
 
 
-// CChildView message handlers
-//	This function is called before the window is created. It sets the window styles and registers the window class.
-//	It also initializes the Sudoku board by calling InitBoard.
+
+/**
+ * @brief Called before the window is created. Sets the window styles and registers the window class.
+ * Also initializes the Sudoku board by calling InitBoard.
+ * @param cs CREATESTRUCT structure that contains information about the window being created.
+ * @return TRUE if successful, FALSE otherwise.
+ */
 BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs) 
 {
 	if (!CWnd::PreCreateWindow(cs))
@@ -74,8 +83,11 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 
 	return TRUE;
 }
-// 	This function handles the painting of the window. It uses a state machine to determine what to draw based on the current game state.
-//	It calls DrawBoard, RevealHoles, AnimateWin, and ShowStats as needed.
+
+/**
+ * @brief Handles the painting of the window. Uses a state machine to determine what to draw based on the current game state.
+ * Calls DrawBoard, RevealHoles, AnimateWin, and ShowStats as needed.
+ */
 void CChildView::OnPaint() 
 {
 	int		cnt;
@@ -111,8 +123,12 @@ void CChildView::OnPaint()
 		break;
 	}
 }
-//	This function reveals the holes in the Sudoku board by filling in the removed values one by one.
-//	If all holes are revealed, it transitions to the ANIMATEWIN state and sets up the win screen.
+
+/**
+ * @brief Reveals the holes in the Sudoku board by filling in the removed values one by one.
+ * If all holes are revealed, transitions to the ANIMATEWIN state and sets up the win screen.
+ * @param dc Device context for painting.
+ */
 void CChildView::RevealHoles(CPaintDC* dc)
 {
 	int		cnt;
@@ -152,8 +168,12 @@ void CChildView::RevealHoles(CPaintDC* dc)
 		SetupWinScreen(dc);		// Setup win screen
 	}
 }
-//	This function handles the animation when the player wins the game.
-//	It calls MoveWinScreen to move the win screen and ShowStats to display the game statistics.
+
+/**
+ * @brief Handles the animation when the player wins the game.
+ * Calls MoveWinScreen to move the win screen and ShowStats to display the game statistics.
+ * @param dc Device context for painting.
+ */
 void CChildView::AnimateWin(CPaintDC* dc)
 {
 	CRect	r;
@@ -162,8 +182,12 @@ void CChildView::AnimateWin(CPaintDC* dc)
 	MoveWinScreen(dc);
 	ShowStats(dc);
 }
-// This function draws the Sudoku board on the screen.
-// It uses various GDI objects like pens, brushes, and fonts to draw the grid, numbers, and highlights.
+
+/**
+ * @brief Draws the Sudoku board on the screen.
+ * Uses various GDI objects like pens, brushes, and fonts to draw the grid, numbers, and highlights.
+ * @param dc Device context for painting.
+ */
 void CChildView::DrawBoard(CPaintDC* dc)
 {
 	int		n, h, w, sz, x, y, xx, yy, xn, yn;
@@ -303,7 +327,11 @@ void CChildView::DrawBoard(CPaintDC* dc)
 	dc->SelectObject(hOldFont);
 	DeleteObject(hFont);
 }
-// This function counts the number of empty cells (holes) left on the Sudoku board.
+
+/**
+ * @brief Counts the number of empty cells (holes) left on the Sudoku board.
+ * @return The number of empty cells.
+ */
 int CChildView::CountHolesLeft()
 {
 	int		i;
@@ -314,7 +342,11 @@ int CChildView::CountHolesLeft()
 	}
 	return cnt;
 }
-// This function displays the game statistics, such as the number of wrong guesses and the number of blanks left.
+
+/**
+ * @brief Displays the game statistics, such as the number of wrong guesses and the number of blanks left.
+ * @param dc Device context for painting.
+ */
 void CChildView::ShowStats(CPaintDC* dc)
 {
 	int		x, y, w, h, sz, cnt;
@@ -342,7 +374,11 @@ void CChildView::ShowStats(CPaintDC* dc)
 	//dc->MoveTo(rn.left, rn.bottom);
 	dc->DrawText(s, &rn, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
-// This function handles the timer events. It is used for animations, such as moving the win screen.
+
+/**
+ * @brief Handles the timer events. Used for animations, such as moving the win screen.
+ * @param nIDEvent Timer event ID.
+ */
 void CChildView::OnTimer(UINT_PTR nIDEvent)
 {
 	CString	s;
@@ -360,8 +396,12 @@ void CChildView::OnTimer(UINT_PTR nIDEvent)
 		m_cnt--;
 	}
 }
-// MoveWinScreen is called every 1/10 second untill won display is finnished
-// This function moves the win screen text around the window, bouncing off the edges.
+
+/**
+ * @brief Moves the win screen text around the window, bouncing off the edges.
+ * Called every 1/10 second until the win display is finished.
+ * @param dc Device context for painting.
+ */
 void CChildView::MoveWinScreen(CPaintDC* dc) {
 	int		x, y;
 	CRect	r, rr;
@@ -403,6 +443,10 @@ void CChildView::MoveWinScreen(CPaintDC* dc) {
 	dc->SetBkMode(OPAQUE);
 }
 
+/**
+ * @brief Sets up the win screen for the animation.
+ * @param dc Device context for painting.
+ */
 void CChildView::SetupWinScreen(CPaintDC* dc) {
 	int		x, y, w, h, fs, fh;
 	CRect	r;
@@ -458,12 +502,14 @@ void CChildView::SetupWinScreen(CPaintDC* dc) {
 	SetTimer('NR', 100, 0);		// image move	
 }
 
-void CChildView::OnRButtonUp(UINT /* nFlags */, CPoint point)
-{
-	ClientToScreen(&point);
-	OnContextMenu(this, point);
-}
 
+/**
+ * @brief Handles the key down event.
+ * checks if the number typed is correct for the selected box
+ * @param nChar The virtual-key code of the key that was pressed.
+ * @param nRepCnt The repeat count, which indicates how many times the keystroke is repeated.
+ * @param nFlags Indicates whether various virtual keys are down.
+ */
 void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 	int		n;
@@ -486,6 +532,12 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 	}
 }
 
+/**
+ * @brief Handles the left mouse button down event.
+ * finds the box under the mouse and sets the selected box to it and selected character to box
+ * @param nFlags Indicates whether various virtual keys are down.
+ * @param point The x and y coordinates of the cursor.
+ */
 void CChildView::OnLButtonDown(UINT /* nFlags */, CPoint point)
 {
 	// Select the square
@@ -521,11 +573,13 @@ void CChildView::OnLButtonDown(UINT /* nFlags */, CPoint point)
 	}
 }
 
-// CSudukuView diagnostics
 
-
-// CSudukuView message handlers
 unsigned char numArray[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+/**
+ * @brief Shuffles an array of numbers in numArray creating a new array.
+ * @param array The array to shuffle.
+ * @return A new shuffled array.
+ */
 unsigned char* CChildView::Shuffle(unsigned char* array)
 {
 	int		i;
@@ -537,7 +591,6 @@ unsigned char* CChildView::Shuffle(unsigned char* array)
 		unsigned char c;
 		for (i = sizeof(numArray) - 1; i > 0; i--) {
 			int j = rand() % (i + 1); // Math.floor(Math.random() * (i + 1));
-			//[newArray[i], newArray[j]] = [newArray[j], newArray[i]];
 			// swap byte from array[i] with array[j]
 			c = newArray[i];
 			newArray[i] = newArray[j];
@@ -547,6 +600,13 @@ unsigned char* CChildView::Shuffle(unsigned char* array)
 	return newArray;
 }
 
+/**
+ * @brief Checks if a number can be placed in a row.
+ * @param puzzleArray The Sudoku puzzle array.
+ * @param y The row index.
+ * @param n The number to check.
+ * @return TRUE if the number can be placed, FALSE otherwise.
+ */
 BOOL CChildView::rowSafe(unsigned char* puzzleArray, int y, char n)
 {
 	// check if number already exists in the row
@@ -557,6 +617,13 @@ BOOL CChildView::rowSafe(unsigned char* puzzleArray, int y, char n)
 	return TRUE;
 }
 
+/**
+ * @brief Checks if a number can be placed in a column.
+ * @param puzzleArray The Sudoku puzzle array.
+ * @param x The column index.
+ * @param n The number to check.
+ * @return TRUE if the number can be placed, FALSE otherwise.
+ */
 BOOL CChildView::colSafe(unsigned char* puzzleArray, int x, char n)
 {
 	// check if number already exists in the row
@@ -567,6 +634,14 @@ BOOL CChildView::colSafe(unsigned char* puzzleArray, int x, char n)
 	return TRUE;
 }
 
+/**
+ * @brief Checks if a number can be placed in a 3x3 box.
+ * @param puzzleArray The Sudoku puzzle array.
+ * @param x The column index.
+ * @param y The row index.
+ * @param n The number to check.
+ * @return TRUE if the number can be placed, FALSE otherwise.
+ */
 BOOL CChildView::boxSafe(unsigned char* puzzleArray, int x, int y, char n)
 {
 	int	i, xx, yy;
@@ -578,6 +653,13 @@ BOOL CChildView::boxSafe(unsigned char* puzzleArray, int x, int y, char n)
 	return TRUE;
 }
 
+/**
+ * @brief Checks if a number can be placed in a specific cell.
+ * @param x The column index.
+ * @param y The row index.
+ * @param n The number to check.
+ * @return TRUE if the number can be placed, FALSE otherwise.
+ */
 BOOL CChildView::IsNumberGood(int x, int y, char n)
 {
 	BOOL ret = FALSE;
@@ -593,6 +675,13 @@ BOOL CChildView::IsNumberGood(int x, int y, char n)
 	return FALSE;
 }
 
+/**
+ * @brief Initializes the Sudoku board.
+ * initalise the indexes for finding the rows and boxes
+ * creates a new random starting board by seeding the random number generator with the time
+ * copies the new board to suduko board, then pokes holes in board by removing the starting board values into the removed values and zeroing the starting board hole
+ * @return TRUE if successful, FALSE otherwise.
+ */
 BOOL CChildView::InitBoard()
 {
 	int		i, x, y;
@@ -625,6 +714,11 @@ BOOL CChildView::InitBoard()
 	return ret;
 }
 
+/**
+ * @brief Finds the next empty cell in the Sudoku board.
+ * @param startingBoard The Sudoku puzzle array.
+ * @return The index of the next empty cell, or -1 if no empty cells are found.
+ */
 int CChildView::nextEmptyCell(unsigned char* startingBoard)
 {
 	int		i;
@@ -636,6 +730,13 @@ int CChildView::nextEmptyCell(unsigned char* startingBoard)
 	return -1;
 }
 
+/**
+ * @brief Checks if a number can be safely placed in a specific cell.
+ * @param puzzleArray The Sudoku puzzle array.
+ * @param emptyCell The index of the empty cell.
+ * @param num The number to check.
+ * @return TRUE if the number can be placed, FALSE otherwise.
+ */
 BOOL CChildView::safeToPlace(unsigned char* puzzleArray, int emptyCell, char num)
 {
 	int x, y;
@@ -646,6 +747,13 @@ BOOL CChildView::safeToPlace(unsigned char* puzzleArray, int emptyCell, char num
 		boxSafe(puzzleArray, x, y, num);
 }
 
+/**
+ * @brief Fills the Sudoku puzzle with numbers.
+ * @param startingBoard The Sudoku puzzle array.
+ * this is recursively called with each new number added untill all numbers are filled 
+ * each time it fails it drops back to the last succsessfully filled board and tries again.
+ * @return A new filled Sudoku puzzle array, or FALSE if the puzzle cannot be filled.
+ */
 unsigned char* CChildView::fillPuzzle(unsigned char* startingBoard)
 {
 	int		i;
@@ -685,6 +793,12 @@ unsigned char* CChildView::fillPuzzle(unsigned char* startingBoard)
 	return FALSE;
 }
 
+/**
+ * @brief Removes numbers from the Sudoku puzzle to create holes.
+ * @param startingBoard The Sudoku puzzle array.
+ * @param holes The number of holes to create.
+ * @return NULL.
+ */
 char* CChildView::pokeHoles(unsigned char* startingBoard, int holes)
 {
 	int				cnt;
@@ -716,7 +830,10 @@ char* CChildView::pokeHoles(unsigned char* startingBoard, int holes)
 	return NULL;
 }
 
-
+/**
+ * @brief Toggles the help display.
+ * allows the showing of all possable numbers for each hole.
+ */
 void CChildView::OnHelpShowhelp()
 {
 	if (m_bhelp) m_bhelp = FALSE;
@@ -724,7 +841,9 @@ void CChildView::OnHelpShowhelp()
 	InvalidateRect(NULL, TRUE);
 }
 
-
+/**
+ * @brief Handles the command to set the number of holes in the Sudoku puzzle and create a new game.
+ */
 void CChildView::OnSudokuNumberofholes()
 {
 	CNumber		DialogNumber;
