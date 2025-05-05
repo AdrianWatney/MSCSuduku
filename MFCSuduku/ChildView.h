@@ -11,6 +11,14 @@ struct Ball
 	int dX;
 	int dY;
 };
+
+typedef struct
+{
+	int		m_numberHoles;			// the number of holes to start the game
+	time_t	m_datetime;				// date time time game was wone
+	int		m_besttime;				// time game was wone in
+} BESTTIMERECORD;
+
 // use a state machine for drawing and winning screen animation.
 enum SUDOKO_STATE {
 	DRAWBOARD = 1,
@@ -46,6 +54,13 @@ public:
 	SUDOKO_STATE  m_state;
 	int			  m_wrongguess;		// number of times the gammer guesed wrong
 	CString		  m_winstr;			// winning string.
+	BESTTIMERECORD	m_besttimes[10];  // The last 10 best times
+	int m_highscore;                   // Current high score  
+	BOOL m_timerstarted;               // Indicates if the timer has started  
+	time_t m_startgametimer;           // Start time of the game  
+	int m_timetofinishgame;            // Time taken to finish the game  
+	BOOL m_newhighscore;               // Indicates if a new high score was achieved  
+	int		m_newscoreindex;		  // index of new high score
 
 // Operations
 public:
@@ -66,6 +81,9 @@ public:
 	void RevealHoles(CPaintDC* dc);
 	void AnimateWin(CPaintDC* dc);
 	int  CountHolesLeft();
+	void GetBestTimes();								// read the 10 best times
+	void WriteBestTimes();								// write the 10 best times
+	BOOL IsNewBestTimes(int bt, time_t tm, int* id);	// TRUE if new best time, adds any new best time into m_besttimes and saves them returns id of best time
 
 // Overrides
 	protected:
@@ -85,5 +103,6 @@ protected:
 public:
 	afx_msg void OnHelpShowhelp();
 	afx_msg void OnSudokuNumberofholes();
+	afx_msg void OnHelpBesttimes();
 };
 

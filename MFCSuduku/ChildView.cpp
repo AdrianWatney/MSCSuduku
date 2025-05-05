@@ -7,6 +7,7 @@
 #include "MFCSuduku.h"
 #include "ChildView.h"
 #include "CNumber.h"
+#include "CBestTimes.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -40,6 +41,11 @@ CChildView::CChildView()
 	memset(&m_ba, 0, sizeof(m_ba));
 	memset(&m_newBall, 0, sizeof(m_newBall));
 	m_hFont = NULL;
+	memset(m_besttimes, 0, sizeof(m_besttimes));
+	m_timerstarted = FALSE;
+	m_newhighscore = FALSE;
+	m_timetofinishgame = 0;
+	m_startgametimer = 0;
 }
 
 /**
@@ -57,6 +63,7 @@ BEGIN_MESSAGE_MAP(CChildView, CWnd)
 	ON_WM_KEYDOWN()
 	ON_COMMAND(ID_HELP_SHOWHELP, &CChildView::OnHelpShowhelp)
 	ON_COMMAND(ID_SUDOKU_NUMBEROFHOLES, &CChildView::OnSudokuNumberofholes)
+	ON_COMMAND(ID_HELP_BESTTIMES, &CChildView::OnHelpBesttimes)
 END_MESSAGE_MAP()
 
 
@@ -80,6 +87,8 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 	// create suduko board
 	m_num_holes = AfxGetApp()->GetProfileInt(_T("Settings"), _T("NumberOfHoles"), 50);
 	InitBoard();
+	// Load high score and card resource directory from application settings.
+	GetBestTimes();
 
 	return TRUE;
 }
@@ -91,7 +100,7 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 void CChildView::OnPaint() 
 {
 	int		cnt;
-
+	
 	CPaintDC dc(this); // device context for painting
 	cnt = CountHolesLeft();
 	switch (m_state)
@@ -118,6 +127,7 @@ void CChildView::OnPaint()
 		}
 		break;
 	case	GAMEFINNISHED:
+		
 		DrawBoard(&dc);
 		ShowStats(&dc);
 		break;
@@ -134,6 +144,7 @@ void CChildView::RevealHoles(CPaintDC* dc)
 	int		cnt;
 	int		i, x, y, w, h, sz, n;
 	CRect	r, rr;
+	time_t			tm;
 
 	m_selected_box = -1;	// no selected box.
 	m_selected_char = -1;	// no selected number
@@ -165,6 +176,17 @@ void CChildView::RevealHoles(CPaintDC* dc)
 	}
 	else {
 		m_state = ANIMATEWIN;
+		if (m_timerstarted) {
+			time(&tm);
+			m_timerstarted = FALSE;		// game finnished stop timer  
+			m_timetofinishgame = (int)(tm - m_startgametimer);      // number of seconds playing  
+			if (m_wrongguess<3 && IsNewBestTimes(m_timetofinishgame, tm, &i)) {
+				// i = index of new best time  
+				m_newscoreindex = i;
+				m_newhighscore = TRUE;
+				m_highscore = m_timetofinishgame;
+			}
+		}
 		SetupWinScreen(dc);		// Setup win screen
 	}
 }
@@ -352,7 +374,7 @@ void CChildView::ShowStats(CPaintDC* dc)
 	int		x, y, w, h, sz, cnt;
 	RECT	rn;
 	CRect	r;
-	CString	s;
+	CString	s,ss;
 	GetClientRect(&r);
 	w = (r.right - r.left);
 	h = (r.bottom - r.top);
@@ -370,7 +392,16 @@ void CChildView::ShowStats(CPaintDC* dc)
 	rn.top = y - 5;
 	rn.right = rn.left + (w / 3);
 	rn.bottom = rn.top + 24;
-	s.Format(_T("Wrong guess: %d, blanks left:%d"), m_wrongguess, cnt);
+	s.Format(_T("Wrong guesses: %d, blanks left:%d "), m_wrongguess, cnt);
+	if (m_newhighscore) {
+		// game finnished
+		ss.Format(_T("NEW HIGH score[%d]: %d:%02d"), m_newscoreindex + 1, m_highscore / 60, m_highscore % 60);
+		if (m_newscoreindex == 0) {
+			// new highest score
+			ss.Format(_T("New Best ever High score: %d:%02d"), m_highscore / 60, m_highscore % 60);
+		}
+		s += ss;
+	}
 	//dc->MoveTo(rn.left, rn.bottom);
 	dc->DrawText(s, &rn, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 }
@@ -481,7 +512,7 @@ void CChildView::SetupWinScreen(CPaintDC* dc) {
 
 	GetClientRect(&r);
 
-	m_winstr = "You Won";
+	m_winstr.Format(_T("You Won in %d:%02d"), m_timetofinishgame / 60, m_timetofinishgame % 60);
 	fs = (SFONTSIZE * 2) * m_winstr.GetLength();		// number of charectors in win string
 	fh = (SFONTSIZE * 2);
 	w = r.right - r.left;
@@ -530,6 +561,10 @@ void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		}
 
 	}
+	if (nChar == 27 && m_state == ANIMATEWIN) {	// ESC key pressed and animating, used wants to end the animation
+		m_cnt = 0;
+		InvalidateRect(NULL, TRUE);
+	}
 }
 
 /**
@@ -545,6 +580,13 @@ void CChildView::OnLButtonDown(UINT /* nFlags */, CPoint point)
 	double	ww;
 	CRect	r;
 	RECT	rr;
+
+	// Start the game timer if it hasn't started and the game isn't finished.  
+	if (!m_timerstarted)
+	{
+		time(&m_startgametimer); // Record the start time of the game.  
+		m_timerstarted = TRUE; // Mark the timer as started.  
+	}
 
 	GetClientRect(&r);
 	w = (r.right - r.left);
@@ -855,8 +897,101 @@ void CChildView::OnSudokuNumberofholes()
 		InitBoard();
 		m_state = DRAWBOARD;
 		m_wrongguess = 0;
+		m_timerstarted = FALSE;
 		InvalidateRect(NULL, TRUE);
 	}
 }
 
+// read the 10 best times
+void CChildView::GetBestTimes()
+{
+	int             i, n,n1, bt, nh;
+	CString         s, st;
+	time_t          t;
+	for (i = 0; i < 10; i++) {
+		st.Format(_T("BestTime_%d"), i);
+		s = AfxGetApp()->GetProfileString(_T("Settings"), st, _T(""));
+		if (s.GetLength() > 1) {
+			// record saved besttime, datetime
+			n = s.Find(_T(","), 0);
+			bt = _wtoi(s.Left(n));
+			m_besttimes[i].m_besttime = bt;
+			n1 = n+1;
+			n = s.Find(_T(","), n1);
+			nh = 0;
+			if (n > 0) {
+				nh = _wtoi(s.Mid(n1, n - n1));
+			}
+			m_besttimes[i].m_numberHoles = nh;
+			t = _wtoll(s.Right(s.GetLength() - (n + 1)));
+			m_besttimes[i].m_datetime = t;
+		}
+		else {
+			m_besttimes[i].m_besttime = 0;
+			m_besttimes[i].m_datetime = 0;
+			m_besttimes[i].m_numberHoles = 0;
+		}
+	}
+}
 
+// write the 10 best times
+void CChildView::WriteBestTimes()
+{
+	int             i;
+	CString         s, st;
+	for (i = 0; i < 10; i++) {
+		st.Format(_T("BestTime_%d"), i);
+		s.Format(_T("%d,%d,%I64d"), m_besttimes[i].m_besttime, m_besttimes[i].m_numberHoles, m_besttimes[i].m_datetime);
+		AfxGetApp()->WriteProfileString(_T("Settings"), st, s);
+	}
+}
+
+// TRUE if new best time, adds any new best time into m_besttimes and saves them
+BOOL CChildView::IsNewBestTimes(int bt, time_t dt, int* id)
+{
+	int             i, j,nh;
+	BESTTIMERECORD  best;
+
+	nh = m_num_holes;
+	for (i = 0; i < 10; i++) {
+		if (nh > m_besttimes[i].m_numberHoles) {
+			// more holes to start overrides the time of games with less holes
+			for (j = 8; j >= i; j--) {
+				best = m_besttimes[j];
+				m_besttimes[j + 1] = best;
+			}
+			m_besttimes[i].m_besttime = bt;
+			m_besttimes[i].m_datetime = dt;
+			m_besttimes[i].m_numberHoles = nh;
+			*id = i;            // index of this best time
+			WriteBestTimes();
+			return TRUE;
+		}
+		else if (nh == m_besttimes[i].m_numberHoles && bt < m_besttimes[i].m_besttime || m_besttimes[i].m_besttime == 0) {
+			// this is a new best time insert besttime record in here
+			for (j = 8; j >= i; j--) {
+				best = m_besttimes[j];
+				m_besttimes[j + 1] = best;
+			}
+			m_besttimes[i].m_besttime = bt;
+			m_besttimes[i].m_datetime = dt;
+			m_besttimes[i].m_numberHoles = nh;
+			*id = i;            // index of this best time
+			WriteBestTimes();
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+
+void CChildView::OnHelpBesttimes()
+{
+	int     i;
+	CBestTimes* dlg = new CBestTimes();
+	for (i = 0; i < 10; i++) {
+		dlg->m_besttimes[i] = m_besttimes[i];
+	}
+	dlg->DoModal();
+	delete dlg;
+}
